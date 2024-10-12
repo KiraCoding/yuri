@@ -1,0 +1,15 @@
+[package]
+name = "yuri"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+divan = "0.1.14"
+
+[profile.bench]
+codegen-units = 1
+lto = true
+
+[[bench]]
+name = "vector"
+harness = false
