@@ -1,9 +1,7 @@
-use core::hint::black_box;
-use yuri::{ops::Sum, Vector};
+use yuri::Vector;
 
 fn main() {
-    let left = Vector::from([1.0, 2.0, 3.0]);
-    let right =  Vector::from([3.0, 2.0, 1.0]);
+    let _vector = Vector::from([1.0, 2.0, 3.0]);
 
-    dbg!(left + right);
+    let array = <[f32; 3]>::default();
 }
