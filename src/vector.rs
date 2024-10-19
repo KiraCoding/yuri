@@ -41,18 +41,6 @@ where
     }
 }
 
-// impl<const D: usize> Add for Vector<f32, D> {
-//     type Output = Self;
-
-//     #[inline]
-//     fn add(self, rhs: Self) -> Self::Output {
-//         let (lhs_prefix, lhs_middle, lhs_suffix) = self.0.as_simd();
-//         let (rhs_prefix, rhs_middle, rhs_suffix) = rhs.0.as_simd();
-
-//         todo!()
-//     }
-// }
-
 macro_rules! impl_vector {
     ($($t:ty),*$(,)?) => {
         $(
