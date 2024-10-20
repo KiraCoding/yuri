@@ -1,4 +1,4 @@
-use yuri::{vector, Vector};
+use yuri::vector;
 
 fn main() {
     let a = vector![2.0; 3];

@@ -1,4 +1,4 @@
-use core::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use core::simd::num::SimdFloat;
 use core::simd::{Simd, SimdElement};
 
@@ -109,6 +109,20 @@ macro_rules! impl_vector {
                 }
             }
 
+            impl<T> MulAssign for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Mul<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                #[inline]
+                fn mul_assign(&mut self, rhs: Self) {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    self.0 = unsafe { (lhs * rhs)[..$n].try_into().unwrap_unchecked() };
+                }
+            }
+
             impl<T> Div for Vector<T, $n>
             where
                 T: SimdElement + Default,
@@ -122,6 +136,20 @@ macro_rules! impl_vector {
                     let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
 
                     Self(unsafe { (lhs / rhs)[..$n].try_into().unwrap_unchecked() })
+                }
+            }
+
+            impl<T> DivAssign for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Div<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                #[inline]
+                fn div_assign(&mut self, rhs: Self) {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    self.0 = unsafe { (lhs / rhs)[..$n].try_into().unwrap_unchecked() };
                 }
             }
         )*
@@ -139,12 +167,10 @@ impl Sum for Vector<f32, 2> {
 impl_vector![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 33, 64];
 
 const fn mpow2<const N: usize>() -> usize {
-    if N == 0 {
-        return 1;
-    } else if N > 64 {
-        64
-    } else {
-        1 << (64 - (N - 1).leading_zeros())
+    match N {
+        0 => 1,
+        n if n >= 64 => 64,
+        n => 1 << (64 - (n - 1).leading_zeros()),
     }
 }
 
