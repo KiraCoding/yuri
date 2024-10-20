@@ -1,7 +1,9 @@
-use yuri::Vector;
+use yuri::{ops::Dot, vector, Vector};
 
 fn main() {
-    let _vector = Vector::from([1.0, 2.0, 3.0]);
+    let a = vector![2.0; 3];
+    let b = vector![3.0, 2.0, 1.0];
 
-    let array = <[f32; 3]>::default();
+    dbg!(a.dot(b));
 }
+

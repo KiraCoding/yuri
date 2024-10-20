@@ -1,7 +1,7 @@
 pub trait Dot {
     type Output;
 
-    fn dot(self) -> Self::Output;
+    fn dot(self, rhs: Self) -> Self::Output;
 }
 
 pub trait Sum {
