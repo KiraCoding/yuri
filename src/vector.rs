@@ -1,7 +1,6 @@
 use core::ops::{Add, Div, Mul, Sub};
 use core::simd::{Simd, SimdElement};
-
-use crate::ops::Sum;
+use std::ops::AddAssign;
 
 #[repr(simd)]
 #[derive(Debug)]
@@ -45,6 +44,20 @@ macro_rules! impl_vector {
                     let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
 
                     Self(unsafe { (lhs + rhs)[..$n].try_into().unwrap_unchecked() })
+                }
+            }
+
+            impl<T> AddAssign for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Add<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                #[inline]
+                fn add_assign(&mut self, rhs: Self) {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    self.0 = unsafe { (lhs + rhs)[..$n].try_into().unwrap_unchecked() };
                 }
             }
 
@@ -119,7 +132,7 @@ const fn mpow2<const N: usize>() -> usize {
     if N >= 64 {
         return 64;
     }
-    if N == 0 { 
+    if N == 0 {
         return 1;
     }
     let mut p = 1;
