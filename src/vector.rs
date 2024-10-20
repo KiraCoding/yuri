@@ -1,7 +1,7 @@
-use crate::ops::{Dot, Sum};
-use core::ops::{Add, Index, Mul};
-use core::simd::num::{SimdFloat, SimdInt, SimdUint};
+use core::ops::{Add, Div, Mul, Sub};
 use core::simd::{Simd, SimdElement};
+
+use crate::ops::Sum;
 
 #[repr(simd)]
 #[derive(Debug)]
@@ -29,118 +29,104 @@ where
     }
 }
 
-impl<T, const D: usize> Index<usize> for Vector<T, D>
-where
-    T: SimdElement,
-{
-    type Output = T;
-
-    #[inline]
-    fn index(&self, index: usize) -> &Self::Output {
-        self.0.index(index)
-    }
-}
-
-impl<const D: usize> Add for Vector<f32, D> {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, rhs: Self) -> Self::Output {
-        let (lhs_prefix, lhs_middle, lhs_suffix) = self.0.as_simd::<64>();
-        let (rhs_prefix, rhs_middle, rhs_suffix) = rhs.0.as_simd::<64>();
-
-        let mut result = [0.0; D];
-        let prefix_len = lhs_prefix.len();
-        let suffix_len = lhs_suffix.len();
-        let middle_start = prefix_len;
-
-        lhs_prefix
-            .iter()
-            .copied()
-            .zip(rhs_prefix.iter().copied())
-            .enumerate()
-            .for_each(|(i, (l, r))| result[i] = l + r);
-
-        for i in 0..suffix_len {
-            result[D - suffix_len + i] = lhs_suffix[i] + rhs_suffix[i];
-        }
-
-        for (i, (l, r)) in lhs_middle.iter().zip(rhs_middle.iter()).enumerate() {
-            let simd_result = *l + *r;
-            let simd_array = simd_result.to_array();
-            let start_idx = middle_start + i * simd_array.len();
-            result[start_idx..start_idx + simd_array.len()].copy_from_slice(&simd_array);
-        }
-
-        Self(result)
-    }
-}
-
-impl<const D: usize> Mul for Vector<f32, D> {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: Self) -> Self::Output {
-        let (lhs_prefix, lhs_middle, lhs_suffix) = self.0.as_simd::<64>();
-        let (rhs_prefix, rhs_middle, rhs_suffix) = rhs.0.as_simd::<64>();
-
-        let mut result = [0.0; D];
-        let prefix_len = lhs_prefix.len();
-        let suffix_len = lhs_suffix.len();
-        let middle_start = prefix_len;
-
-        for i in 0..prefix_len {
-            result[i] = lhs_prefix[i] * rhs_prefix[i];
-        }
-
-        for i in 0..suffix_len {
-            result[D - suffix_len + i] = lhs_suffix[i] * rhs_suffix[i];
-        }
-
-        for (i, (l, r)) in lhs_middle.iter().zip(rhs_middle.iter()).enumerate() {
-            let simd_result = *l * *r;
-            let simd_array = simd_result.to_array();
-            let start_idx = middle_start + i * simd_array.len();
-            result[start_idx..start_idx + simd_array.len()].copy_from_slice(&simd_array);
-        }
-
-        Self(result)
-    }
-}
-
-impl<const D: usize> Dot for Vector<f32, D> {
-    type Output = f32;
-
-    fn dot(self, rhs: Self) -> Self::Output {
-        (self * rhs).sum()
-    }
-}
-
 macro_rules! impl_vector {
-    ($($t:ty),*$(,)?) => {
+    ($($n:expr),+$(,)?) => {
         $(
-            impl<const D: usize> Sum for Vector<$t, D> {
-                type Output = $t;
+            impl<T> Add for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Add<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                type Output = Self;
 
                 #[inline]
-                fn sum(self) -> Self::Output {
-                    let (prefix, middle, suffix) = self.0.as_simd();
+                fn add(self, rhs: Self) -> Self::Output {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
 
-                    let mut sums = Simd::from_array([<$t>::default(); 64]);
-                    sums[0] = prefix.iter().copied().sum();
-                    sums[1] = suffix.iter().copied().sum();
+                    Self(unsafe { (lhs + rhs)[..$n].try_into().unwrap_unchecked() })
+                }
+            }
 
-                    middle.iter().copied().fold(sums, Simd::add).reduce_sum()
+            impl<T> Sub for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Sub<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                type Output = Self;
+
+                #[inline]
+                fn sub(self, rhs: Self) -> Self::Output {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    Self(unsafe { (lhs - rhs)[..$n].try_into().unwrap_unchecked() })
+                }
+            }
+
+            impl<T> Mul for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Mul<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                type Output = Self;
+
+                #[inline]
+                fn mul(self, rhs: Self) -> Self::Output {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    Self(unsafe { (lhs * rhs)[..$n].try_into().unwrap_unchecked() })
+                }
+            }
+
+            impl<T> Div for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Div<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                type Output = Self;
+
+                #[inline]
+                fn div(self, rhs: Self) -> Self::Output {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    Self(unsafe { (lhs / rhs)[..$n].try_into().unwrap_unchecked() })
                 }
             }
         )*
     };
 }
 
-impl_vector! {
-    f32, f64,
-    u8, u16, u32, u64, usize,
-    i8, i16, i32, i64, isize,
+// impl<T> Sum for Vector<T, 2>
+// where
+//     T: SimdElement + Default,
+// {
+//     type Output = Self;
+
+//     #[inline]
+//     fn sum(self) -> Self::Output {
+//         let simd = Simd::<T, { mpow2::<2>() }>::load_or_default(&self.0);
+
+//         Self(simd.reduce_sum())
+//     }
+// }
+
+impl_vector! { 1, 2, 3, 4, 5 }
+
+const fn mpow2<const N: usize>() -> usize {
+    if N >= 64 {
+        return 64;
+    }
+    if N == 0 { 
+        return 1;
+    }
+    let mut p = 1;
+    while p < N {
+        p <<= 1;
+    }
+    p
 }
 
 /// `vector![]`
