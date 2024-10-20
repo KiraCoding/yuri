@@ -9,3 +9,4 @@ pub trait Sum {
 
     fn sum(self) -> Self::Output;
 }
+

@@ -1,3 +1,8 @@
+#![feature(portable_simd)]
+
+#[global_allocator]
+static ALLOC: divan::AllocProfiler = divan::AllocProfiler::system();
+
 #[divan::bench_group]
 mod add {
     use core::hint::black_box;
@@ -23,6 +28,34 @@ mod add {
         let b = vector![2.0f32; 3];
 
         black_box(a + b)
+    }
+}
+
+#[divan::bench_group]
+mod add_assign {
+    use core::hint::black_box;
+    use yuri::{vector, Vector};
+
+    #[divan::bench]
+    fn scalar() -> [f32; 3] {
+        let mut a = [2.0f32; 3];
+        let b = [2.0f32; 3];
+
+        for (x, &y) in a.iter_mut().zip(b.iter()) {
+            *x = black_box(*x + y);
+        }
+
+        a
+    }
+
+    #[divan::bench]
+    fn simd() -> Vector<f32, 3> {
+        let mut a = vector![2.0f32; 3];
+        let b = vector![2.0f32; 3];
+
+        black_box(a += b);
+
+        a
     }
 }
 

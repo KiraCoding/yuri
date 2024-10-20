@@ -1,6 +1,8 @@
-use core::ops::{Add, Div, Mul, Sub};
+use core::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
+use core::simd::num::SimdFloat;
 use core::simd::{Simd, SimdElement};
-use std::ops::AddAssign;
+
+use crate::ops::Sum;
 
 #[repr(simd)]
 #[derive(Debug)]
@@ -77,6 +79,20 @@ macro_rules! impl_vector {
                 }
             }
 
+            impl<T> SubAssign for Vector<T, $n>
+            where
+                T: SimdElement + Default,
+                Simd<T, { mpow2::<$n>() }>: Sub<Output = Simd<T, { mpow2::<$n>() }>>,
+            {
+                #[inline]
+                fn sub_assign(&mut self, rhs: Self) {
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+
+                    self.0 = unsafe { (lhs - rhs)[..$n].try_into().unwrap_unchecked() };
+                }
+            }
+
             impl<T> Mul for Vector<T, $n>
             where
                 T: SimdElement + Default,
@@ -96,14 +112,14 @@ macro_rules! impl_vector {
             impl<T> Div for Vector<T, $n>
             where
                 T: SimdElement + Default,
-                Simd<T, { mpow2::<$n>() }>: Div<Output = Simd<T, { mpow2::<$n>() }>>,
+                Simd<T, { nmpow2::<$n>() }>: Div<Output = Simd<T, { nmpow2::<$n>() }>>,
             {
                 type Output = Self;
 
                 #[inline]
                 fn div(self, rhs: Self) -> Self::Output {
-                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
-                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
+                    let lhs = Simd::<T, { nmpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { nmpow2::<$n>() }>::load_or_default(&rhs.0);
 
                     Self(unsafe { (lhs / rhs)[..$n].try_into().unwrap_unchecked() })
                 }
@@ -112,19 +128,13 @@ macro_rules! impl_vector {
     };
 }
 
-// impl<T> Sum for Vector<T, 2>
-// where
-//     T: SimdElement + Default,
-// {
-//     type Output = Self;
+impl Sum for Vector<f32, 2> {
+    type Output = f32;
 
-//     #[inline]
-//     fn sum(self) -> Self::Output {
-//         let simd = Simd::<T, { mpow2::<2>() }>::load_or_default(&self.0);
-
-//         Self(simd.reduce_sum())
-//     }
-// }
+    fn sum(self) -> Self::Output {
+        Simd::<f32, { mpow2::<2>() }>::load_or_default(&self.0).reduce_sum()
+    }
+}
 
 impl_vector! { 1, 2, 3, 4, 5 }
 
@@ -139,6 +149,20 @@ const fn mpow2<const N: usize>() -> usize {
     while p < N {
         p <<= 1;
     }
+    p
+}
+
+const fn nmpow2<const N: usize>() -> usize {
+    if N == 0 {
+        return 1;
+    }
+
+    let p = if N > 64 {
+        64
+    } else {
+        1 << (64 - (N - 1).leading_zeros())
+    };
+
     p
 }
 
