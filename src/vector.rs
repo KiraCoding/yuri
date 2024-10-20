@@ -112,14 +112,14 @@ macro_rules! impl_vector {
             impl<T> Div for Vector<T, $n>
             where
                 T: SimdElement + Default,
-                Simd<T, { nmpow2::<$n>() }>: Div<Output = Simd<T, { nmpow2::<$n>() }>>,
+                Simd<T, { mpow2::<$n>() }>: Div<Output = Simd<T, { mpow2::<$n>() }>>,
             {
                 type Output = Self;
 
                 #[inline]
                 fn div(self, rhs: Self) -> Self::Output {
-                    let lhs = Simd::<T, { nmpow2::<$n>() }>::load_or_default(&self.0);
-                    let rhs = Simd::<T, { nmpow2::<$n>() }>::load_or_default(&rhs.0);
+                    let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
+                    let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
 
                     Self(unsafe { (lhs / rhs)[..$n].try_into().unwrap_unchecked() })
                 }
@@ -136,34 +136,16 @@ impl Sum for Vector<f32, 2> {
     }
 }
 
-impl_vector! { 1, 2, 3, 4, 5 }
+impl_vector![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 33, 64];
 
 const fn mpow2<const N: usize>() -> usize {
-    if N >= 64 {
-        return 64;
-    }
     if N == 0 {
         return 1;
-    }
-    let mut p = 1;
-    while p < N {
-        p <<= 1;
-    }
-    p
-}
-
-const fn nmpow2<const N: usize>() -> usize {
-    if N == 0 {
-        return 1;
-    }
-
-    let p = if N > 64 {
+    } else if N > 64 {
         64
     } else {
         1 << (64 - (N - 1).leading_zeros())
-    };
-
-    p
+    }
 }
 
 /// `vector![]`
