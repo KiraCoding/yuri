@@ -1,8 +1,7 @@
+use crate::ops::Sum;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use core::simd::num::SimdFloat;
 use core::simd::{Simd, SimdElement};
-
-use crate::ops::Sum;
 
 #[repr(simd)]
 #[derive(Debug)]
