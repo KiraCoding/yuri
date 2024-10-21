@@ -163,7 +163,7 @@ impl Sum for Vector<f32, 2> {
     }
 }
 
-impl_vector![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 33, 64];
+impl_vector![1, 2, 3, 4, 5, 6, 7, 8];
 
 const fn mpow2<const N: usize>() -> usize {
     match N {
