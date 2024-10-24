@@ -6,9 +6,9 @@ pub union Vector<T, const D: usize>
 where
     T: SimdElement,
     LaneCount<{ mpow2::<{ D }>() }>: SupportedLaneCount,
-    [(); len::<{ D }>()]:,
+    [(); mpow2::<{ D }>() + len::<{ D }>()]:,
 {
-    data: [T; mpow2::<{ D }>()], // ignore this prob unaligned mess
+    data: [T; { mpow2::<{ D }>() + len::<{ D }>() }], // ignore this prob unaligned mess
     simd: [Simd<T, { mpow2::<{ D }>() }>; len::<{ D }>()],
 }
 
@@ -16,7 +16,7 @@ impl<T, const D: usize> From<[T; D]> for Vector<T, D>
 where
     T: SimdElement + Default,
     LaneCount<{ mpow2::<{ D }>() }>: SupportedLaneCount,
-    [(); len::<{ D }>()]:,
+    [(); mpow2::<{ D }>() + len::<{ D }>()]:,
     [Simd<T, { mpow2::<{ D }>() }>; len::<D>()]: Default,
 {
     #[inline]
@@ -43,7 +43,7 @@ where
     T: SimdElement,
     LaneCount<{ mpow2::<{ D }>() }>: SupportedLaneCount,
     Simd<T, { mpow2::<D>() }>: Add<Output = Simd<T, { mpow2::<D>() }>>,
-    [(); len::<{ D }>()]:,
+    [(); mpow2::<{ D }>() + len::<{ D }>()]:,
 {
     type Output = Self;
 
@@ -69,7 +69,7 @@ impl<T, const D: usize> Index<usize> for Vector<T, D>
 where
     T: SimdElement,
     LaneCount<{ mpow2::<{ D }>() }>: SupportedLaneCount,
-    [(); len::<{ D }>()]:,
+    [(); mpow2::<{ D }>() + len::<{ D }>()]:,
 {
     type Output = T;
 
