@@ -25,3 +25,5 @@ fn prototype() -> yuri::vector_test::Vector<f64, 3> {
 fn main() {
     divan::main();
 }
+
+// somehow these benches didnt run so I moved them into the vector bench
