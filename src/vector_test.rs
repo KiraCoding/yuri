@@ -64,6 +64,7 @@ where
     }
 }
 
+// ignore this unaligned prob `.data` access
 impl<T, const D: usize> Index<usize> for Vector<T, D>
 where
     T: SimdElement,
@@ -77,14 +78,12 @@ where
         // Check bounds to ensure index is within 0..D
         assert!(
             index < D,
-            "Index out of bounds: {} is not less or eq than {}",
+            "Index out of bounds: {} is not less {}",
             index,
             D
         );
 
-        // Use unsafe to access the union's data
         unsafe {
-            // Assuming you want to access `self.data` here
             &self.data[index]
         }
     }
