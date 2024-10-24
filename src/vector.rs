@@ -145,6 +145,8 @@ macro_rules! impl_vector {
             {
                 #[inline]
                 fn div_assign(&mut self, rhs: Self) {
+                    dbg!(mpow2::<$n>());
+
                     let lhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&self.0);
                     let rhs = Simd::<T, { mpow2::<$n>() }>::load_or_default(&rhs.0);
 
@@ -163,13 +165,13 @@ impl Sum for Vector<f32, 2> {
     }
 }
 
-impl_vector![1, 2, 3, 4, 5, 6, 7, 8];
+impl_vector![1, 2, 3, 4, 5, 6, 7, 8, 64];
 
 const fn mpow2<const N: usize>() -> usize {
     match N {
         0 => 1,
         n if n >= 64 => 64,
-        n => 1 << (64 - (n - 1).leading_zeros()),
+        n => n.next_power_of_two(),
     }
 }
 
